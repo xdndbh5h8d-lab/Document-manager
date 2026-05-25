@@ -136,14 +136,14 @@ class DocumentManagerWindow(QMainWindow):
         self.current_file_path = None
         self.current_file_type = "docx"
         self.title_label.setText("Neue Word-Datei")
-        self.content_editor.setPlainText("Neue Word-Datei\n")
+        self.content_editor.setPlainText("")
         self.file_path_input.clear()
 
     def create_new_pdf_document(self):
         self.current_file_path = None
         self.current_file_type = "pdf"
         self.title_label.setText("Neue PDF-Datei")
-        self.content_editor.setPlainText("Neue PDF-Datei\n")
+        self.content_editor.setPlainText("")
         self.file_path_input.clear()
 
     def save_document(self):
@@ -174,16 +174,16 @@ class DocumentManagerWindow(QMainWindow):
     def _save_word(self, content: str):
         path = self.current_file_path
         if not path or path.suffix.lower() != ".docx":
-            path, _ = QFileDialog.getSaveFileName(self, "Word-Datei speichern", "", "Word Dateien (*.docx)")
-            if not path:
+            file_path, _ = QFileDialog.getSaveFileName(self, "Word-Datei speichern", "", "Word Dateien (*.docx)")
+            if not file_path:
                 return
-            path = Path(path if path.endswith(".docx") else f"{path}.docx")
+            path = Path(file_path if file_path.endswith(".docx") else f"{file_path}.docx")
 
         try:
             doc = Document()
             for line in content.splitlines():
                 doc.add_paragraph(line)
-            doc.save(path)
+            doc.save(str(path))
             self.current_file_path = path
             self.file_path_input.setText(str(path))
             self.title_label.setText(f"Word-Dokument: {path.name}")
@@ -194,23 +194,23 @@ class DocumentManagerWindow(QMainWindow):
     def _save_pdf(self, content: str):
         path = self.current_file_path
         if not path or path.suffix.lower() != ".pdf":
-            path, _ = QFileDialog.getSaveFileName(self, "PDF-Datei speichern", "", "PDF Dateien (*.pdf)")
-            if not path:
+            file_path, _ = QFileDialog.getSaveFileName(self, "PDF-Datei speichern", "", "PDF Dateien (*.pdf)")
+            if not file_path:
                 return
-            path = Path(path if path.endswith(".pdf") else f"{path}.pdf")
+            path = Path(file_path if file_path.endswith(".pdf") else f"{file_path}.pdf")
 
         try:
             pdf = canvas.Canvas(str(path), pagesize=A4)
-            text_object = pdf.beginText(40, A4[1] - 40)
-            text_object.setFont("Helvetica", 11)
+            y_position = A4[1] - 40
+            
             for line in content.splitlines():
-                if text_object.getY() < 40:
-                    pdf.drawText(text_object)
+                if y_position < 40:
                     pdf.showPage()
-                    text_object = pdf.beginText(40, A4[1] - 40)
-                    text_object.setFont("Helvetica", 11)
-                text_object.textLine(line)
-            pdf.drawText(text_object)
+                    y_position = A4[1] - 40
+                
+                pdf.drawString(40, y_position, line[:70])
+                y_position -= 15
+            
             pdf.save()
             self.current_file_path = path
             self.file_path_input.setText(str(path))
